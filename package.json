@@ -1,0 +1,14 @@
+{
+  "name": "overlord-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ."
+  },
+  "author": "Dmitry Gladkov",
+  "license": "MIT",
+  "dependencies": {
+    "botbuilder": "3.2.3",
+    "restify": "4.1.1"
+  }
+}
