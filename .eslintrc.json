@@ -1,0 +1,35 @@
+{
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "experimentalObjectRestSpread": true
+    }
+  },
+  "env": {
+    "node": true
+  },
+  "rules": {
+    "arrow-parens": "warn",
+    "comma-dangle": ["warn", "always-multiline"],
+    "constructor-super": "error",
+    "generator-star-spacing": "warn",
+    "indent": ["error", 2, {"SwitchCase": 1}],
+    "jsx-quotes": "warn",
+    "linebreak-style": ["error", "unix"],
+    "no-class-assign": "error",
+    "no-console": "allow",
+    "no-const-assign": "error",
+    "no-dupe-class-members": "error",
+    "no-this-before-super": "error",
+    "no-unused-vars": ["error", {"args": "none"}],
+    "no-var": "warn",
+    "object-shorthand": "warn",
+    "prefer-spread": "warn",
+    "prefer-template": "warn",
+    "quotes": ["error", "single"],
+    "require-yield": "error",
+    "semi": "error"
+  }
+}

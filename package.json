@@ -3,12 +3,29 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node ."
+    "start": "node .",
+    "nodemon": "nodemon .",
+    "forward": "ssh -R 3978:localhost:3978 codebakery.io"
   },
   "author": "Dmitry Gladkov",
   "license": "MIT",
   "dependencies": {
     "botbuilder": "3.2.3",
+    "cheerio": "^0.22.0",
+    "node-fetch": "^1.6.3",
     "restify": "4.1.1"
-  }
+  },
+  "devDependencies": {
+    "eslint": "^3.7.1",
+    "nodemon": "1.11.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codebakery/overlord-bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/codebakery/overlord-bot/issues"
+  },
+  "homepage": "https://github.com/codebakery/overlord-bot#readme",
+  "description": ""
 }
