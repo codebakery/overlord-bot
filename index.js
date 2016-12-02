@@ -5,8 +5,10 @@ const fetch = require('node-fetch');
 const config = Object.assign({
   'HOST': '127.0.0.1',
   'PORT': 3978,
-  'MESSAGING_ENDPOINT': '/api/messages',
+  'ALLOWED_TOKENS': [],
 }, require('./config.json'));
+
+let currentAddress = null;
 
 const server = restify.createServer({
   name: process.env.npm_package_name,
@@ -22,50 +24,104 @@ const connector = new botbuilder.ChatConnector({
 });
 
 const bot = new botbuilder.UniversalBot(connector);
-server.post(config.MESSAGING_ENDPOINT, connector.listen());
 
-const currentAddress = null;
+server.use(restify.bodyParser({mapParams: false}));
+server.post('/api/messages', connector.listen());
+server.post('/api/send', (req, res, next) => {
+  token = (req.headers.authorization || '').replace(/^Token\s+/, '');
+  if (config.ALLOWED_TOKENS.includes(token)) {
+    if (currentAddress !== null) {
+      const msg = new botbuilder.Message()
+        .address(currentAddress)
+        .text(req.body);
+      bot.send(msg);
+      res.send(200);
+    }
+  } else {
+    res.send(401, 'Invalid or missing token');
+  }
+  return next();
+});
+
+server.post('/api/circle', (req, res, next) => {
+  if (currentAddress !== null) {
+    const msg = new botbuilder.Message()
+      .address(currentAddress)
+      .text(req.body);
+    bot.send(msg);
+    bot.send(`Build of ${req.body.reponame} is complete.<br/>Outcome: ${req.body.outcome}<br/>Build details: ${req.body.build_url}`)
+  }
+  res.send(200);
+  return next();
+});
 
 
 const availableCommands = {
     save: (session) => {
       currentAddress = session.message.address;
-      session.send('Route address saved successfully.'); // <at id="28:868e0687-2b3e-43c0-a415-9af02a444772">Overlord</at> text
+      session.send('Route address saved successfully.');
     },
     hi: (session) => {
       const firstName = session.message.user.name.split(' ')[0]
       session.send(`Hello, ${firstName}.`);
     },
     norris: (session) => {
-      session.send('A fact about Chuck Norris:');
       fetch('http://api.icndb.com/jokes/random')
         .then(function(response) {
           return response.json();
         }).then(function(data) {
           if (data.type === 'success') {
-            session.send(data.value.joke);
+            session.send(`A fact about Chuck Norris:<br/>${data.value.joke}`);
           }
         });
     },
-    '(mooning)': (session) => {
-      session.send('(finger)');
+    xkcd: (session) => {
+      fetch('http://xkcd.com/info.0.json')
+        .then(function(response) {
+          return response.json();
+        }).then(function(data) {
+          fetch(`http://xkcd.com/${Math.round(Math.random() * data.num) + 1}/info.0.json`)
+            .then(function(response) {
+              return response.json();
+            }).then(function(data) {
+              const cardImage = new botbuilder.CardImage(session)
+                .url(data.img);
+              const openAction = new botbuilder.CardAction(session)
+                .title('Open')
+                .type('openUrl')
+                .value(`https://xkcd.com/${data.num}/`);
+              const moreButton = new botbuilder.CardAction(session)
+                .title('Show Another')
+                .type('postBack')
+                .value('xkcd');
+              const card = new botbuilder.HeroCard(session)
+                .title(data.title)
+                .subtitle(data.alt)
+                .tap(openAction)
+                .buttons([moreButton])
+                .images([cardImage]);
+              const msg = new botbuilder.Message(session)
+                .addAttachment(card);
+              session.send(msg)
+              console.log(data.title);
+              console.log(data.img);
+              console.log(data.alt);
+            });
+        });
     }
 };
 
-var stripss = /<ss type=".+">(.+)<\/ss>/g;
 function prepareMessage(text) {
-  return '<ss type=".+">(.+)</ss>'.replace(stripss, '$1');
+  return text
+    .replace(/<ss type=".+">(.+)<\/ss>/g, '$1')
+    .replace(/<at id=".+">.+<\/at>/g, '')
+    .trim();
 }
 
 bot.dialog('/',
   (session) => {
-    let messageText;
-    if (session.message.address.conversation.isGroup) {
-      messageText = session.message.text.slice(63); // 
-    } else {
-      messageText = session.message.text;
-    }
-    messageText = prepareMessage(prepareMessage);
+    console.log(session.message.text);
+    const messageText = prepareMessage(session.message.text);
     if (availableCommands.hasOwnProperty(messageText)) {
       availableCommands[messageText](session);
     } else {
@@ -73,4 +129,3 @@ bot.dialog('/',
     }
   }
 );
-
