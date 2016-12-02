@@ -10,13 +10,13 @@
   "author": "Dmitry Gladkov",
   "license": "MIT",
   "dependencies": {
-    "botbuilder": "3.2.3",
-    "cheerio": "^0.22.0",
-    "node-fetch": "^1.6.3",
-    "restify": "4.1.1"
+    "botbuilder": "3.4.4",
+    "cheerio": "0.22.0",
+    "node-fetch": "1.6.3",
+    "restify": "4.3.0"
   },
   "devDependencies": {
-    "eslint": "^3.7.1",
+    "eslint": "3.11.1",
     "nodemon": "1.11.0"
   },
   "repository": {
