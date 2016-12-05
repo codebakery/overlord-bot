@@ -55,7 +55,6 @@ server.post('/api/circle', (req, res, next) => {
   return next();
 });
 
-
 const availableCommands = {
     hi: (session) => {
       const firstName = session.message.user.name.split(' ')[0]
@@ -71,54 +70,73 @@ const availableCommands = {
           }
         });
     },
-    xkcd: (session) => {
-      fetch('http://xkcd.com/info.0.json')
-        .then(function(response) {
-          return response.json();
-        }).then(function(data) {
-          fetch(`http://xkcd.com/${Math.round(Math.random() * data.num) + 1}/info.0.json`)
-            .then(function(response) {
-              return response.json();
-            }).then(function(data) {
-              const cardImage = new botbuilder.CardImage(session)
-                .url(data.img);
-              const openAction = new botbuilder.CardAction(session)
-                .title('Open')
-                .type('openUrl')
-                .value(`https://xkcd.com/${data.num}/`);
-              const moreButton = new botbuilder.CardAction(session)
-                .title('Show Another')
-                .type('postBack')
-                .value('xkcd');
-              const card = new botbuilder.HeroCard(session)
-                .title(data.title)
-                .subtitle(data.alt)
-                .tap(openAction)
-                .buttons([moreButton])
-                .images([cardImage]);
-              const msg = new botbuilder.Message(session)
-                .addAttachment(card);
-              session.send(msg);
-            });
-        });
+    xkcd: (session, id) => {
+      const processResponse = (data) => {
+        const cardImage = new botbuilder.CardImage(session)
+          .url(data.img);
+        const openAction = new botbuilder.CardAction(session)
+          .title('Open')
+          .type('openUrl')
+          .value(`https://xkcd.com/${data.num}/`);
+        const moreButton = new botbuilder.CardAction(session)
+          .title('Show Another')
+          .type('postBack')
+          .value('xkcd');
+        const card = new botbuilder.HeroCard(session)
+          .title(data.title)
+          .subtitle(data.alt)
+          .tap(openAction)
+          .buttons([moreButton])
+          .images([cardImage]);
+        const msg = new botbuilder.Message(session)
+          .addAttachment(card);
+        session.send(msg);
+      }
+      if (id) {
+        fetch(`http://xkcd.com/${id}/info.0.json`)
+          .then((response) => response.json())
+          .then(processResponse);
+      } else {
+        fetch('http://xkcd.com/info.0.json')
+          .then((response) => response.json())
+          .then((data) => fetch(`http://xkcd.com/${Math.round(Math.random() * data.num) + 1}/info.0.json`))
+          .then((response) => response.json())
+          .then(processResponse);
+      }
     }
 };
 
-function prepareMessage(text) {
-  return text
+function createRouter(handlers, routes, middlewares) {
+  const dispatch = routes.map(([pattern, name]) => [pattern, handlers[name]]);
+  const help = 'Available commands:<br/>' + routes.map(([_, name, description]) => `**${name}** - ${description}`).join('<br/>');
+  return (session) => {
+    middlewares.forEach((m) => m(session));
+    let found = false;
+    for ([pattern, handler] of dispatch) {
+      const matches = session.message.text.match(pattern);
+      if (matches) {
+        handler(session, ...matches.slice(1));
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      session.send(help);
+    }
+  };
+}
+
+const router = createRouter(availableCommands, [
+  [/^hi$/, 'hi', 'A friendly greeting'],
+  [/^xkcd ?(\d*)$/, 'xkcd', 'Show random xkcd post'],
+  [/^norris$/, 'norris', 'Show random Chuck Norris fact'],
+], [prepareMessage]);
+
+function prepareMessage(session) {
+  session.message.text = session.message.text
     .replace(/<ss type=".+">(.+)<\/ss>/g, '$1')
     .replace(/<at id=".+">.+<\/at>/g, '')
     .trim();
 }
 
-bot.dialog('/',
-  (session) => {
-    console.log(session.message.address);
-    const messageText = prepareMessage(session.message.text);
-    if (availableCommands.hasOwnProperty(messageText)) {
-      availableCommands[messageText](session);
-    } else {
-      session.send(`Available commands:<br/>${Object.keys(availableCommands).join('<br/>')}`);
-    }
-  }
-);
+bot.dialog('/', router);
