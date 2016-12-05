@@ -8,8 +8,6 @@ const config = Object.assign({
   'ALLOWED_TOKENS': [],
 }, require('./config.json'));
 
-let currentAddress = null;
-
 const server = restify.createServer({
   name: process.env.npm_package_name,
 });
@@ -30,13 +28,11 @@ server.post('/api/messages', connector.listen());
 server.post('/api/send', (req, res, next) => {
   token = (req.headers.authorization || '').replace(/^Token\s+/, '');
   if (config.ALLOWED_TOKENS.includes(token)) {
-    if (currentAddress !== null) {
-      const msg = new botbuilder.Message()
-        .address(currentAddress)
-        .text(req.body);
-      bot.send(msg);
-      res.send(200);
-    }
+    const msg = new botbuilder.Message()
+      .address(config.GROUP_ADDRESS)
+      .text(req.body);
+    bot.send(msg);
+    res.send(200);
   } else {
     res.send(401, 'Invalid or missing token');
   }
@@ -44,23 +40,23 @@ server.post('/api/send', (req, res, next) => {
 });
 
 server.post('/api/circle', (req, res, next) => {
-  if (currentAddress !== null) {
-    const msg = new botbuilder.Message()
-      .address(currentAddress)
-      .text(req.body);
-    bot.send(msg);
-    bot.send(`Build of ${req.body.reponame} is complete.<br/>Outcome: ${req.body.outcome}<br/>Build details: ${req.body.build_url}`)
-  }
+  const {
+    author_name,
+    branch,
+    build_url,
+    outcome,
+    reponame
+  } = req.body.payload;
+  const msg = new botbuilder.Message()
+    .address(config.GROUP_ADDRESS)
+    .text(`Build of branch ${branch} of ${reponame} is complete.<br/>Outcome: ${outcome}<br/>Author: ${author_name}<br/>Build details: ${build_url}`);
+  bot.send(msg);
   res.send(200);
   return next();
 });
 
 
 const availableCommands = {
-    save: (session) => {
-      currentAddress = session.message.address;
-      session.send('Route address saved successfully.');
-    },
     hi: (session) => {
       const firstName = session.message.user.name.split(' ')[0]
       session.send(`Hello, ${firstName}.`);
@@ -102,10 +98,7 @@ const availableCommands = {
                 .images([cardImage]);
               const msg = new botbuilder.Message(session)
                 .addAttachment(card);
-              session.send(msg)
-              console.log(data.title);
-              console.log(data.img);
-              console.log(data.alt);
+              session.send(msg);
             });
         });
     }
@@ -120,7 +113,7 @@ function prepareMessage(text) {
 
 bot.dialog('/',
   (session) => {
-    console.log(session.message.text);
+    console.log(session.message.address);
     const messageText = prepareMessage(session.message.text);
     if (availableCommands.hasOwnProperty(messageText)) {
       availableCommands[messageText](session);

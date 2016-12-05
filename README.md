@@ -11,6 +11,7 @@
     "ALLOWED_TOKENS": [
         "allowed-token"
     ]
+    "GROUP_ADDRESS": {} // address for group notifications
 }
 ```
 3. Run with `npm start` or `npm run nodemon`

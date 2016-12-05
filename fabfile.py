@@ -1,4 +1,4 @@
-from fabric.api import cd, env, run, sudo, task
+from fabric.api import cd, env, sudo, task, put
 
 
 env.use_ssh_config = True
@@ -6,22 +6,20 @@ env.hosts = ['codebakery.io']
 env.project_root = '/home/overlord/bot'
 env.remote = 'origin'
 env.branch = 'master'
-env.chown_user = 'overlord'
+env.app_user = 'overlord'
 env['sudo_prefix'] += '-H '
 
 
 @task
 def pull():
     with cd(env.project_root):
-        sudo('chown -R {} .'.format(env.user))
-        run('git pull {} {}'.format(env.remote, env.branch))
-        sudo('chown -R {} .'.format(env.chown_user))
+        sudo('git pull {} {}'.format(env.remote, env.branch), user=env.app_user)
 
 
 @task
 def npm_update():
     with cd(env.project_root):
-        sudo('npm --progress false update', user=env.chown_user)
+        sudo('npm --progress false update', user=env.app_user)
 
 
 @task
@@ -47,7 +45,14 @@ def reload_nginx():
 @task
 def rm_node_modules():
     with cd(env.project_root):
-        sudo('rm -rf ./node_modules', user=env.chown_user)
+        sudo('rm -rf ./node_modules', user=env.app_user)
+
+
+@task
+def put_config():
+    put('./config.json', '/tmp')
+    sudo('mv /tmp/config.json {}'.format(env.project_root))
+    sudo('chown {} {}/config.json'.format(env.app_user, env.project_root))
 
 
 @task(default=True)
