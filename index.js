@@ -56,9 +56,10 @@ server.post('/api/circle', (req, res, next) => {
 });
 
 const availableCommands = {
-    hi: (session) => {
+    hi: (session, greeting) => {
       const firstName = session.message.user.name.split(' ')[0]
-      session.send(`Hello, ${firstName}.`);
+      const processedGreeting = greeting[0].toUppserCase() + greeting.slice(1).toLowerCase();
+      session.send(`${processedGreeting}, ${firstName}.`);
     },
     norris: (session) => {
       fetch('http://api.icndb.com/jokes/random')
@@ -127,9 +128,9 @@ function createRouter(handlers, routes, middlewares) {
 }
 
 const router = createRouter(availableCommands, [
-  [/^hi$/, 'hi', 'A friendly greeting'],
-  [/^xkcd ?(\d*)$/, 'xkcd', 'Show random xkcd post'],
-  [/^norris$/, 'norris', 'Show random Chuck Norris fact'],
+  [/^(hi|hello|wassup|hiya|good evening|good morning|good day|privet|yo).*$/i, 'hi', 'A friendly greeting'],
+  [/^xkcd ?(\d*)$/i, 'xkcd', 'Show random xkcd post'],
+  [/^norris$/i, 'norris', 'Show random Chuck Norris fact'],
 ], [prepareMessage]);
 
 function prepareMessage(session) {
