@@ -58,7 +58,7 @@ server.post('/api/circle', (req, res, next) => {
 const availableCommands = {
     hi: (session, greeting) => {
       const firstName = session.message.user.name.split(' ')[0]
-      const processedGreeting = greeting[0].toUppserCase() + greeting.slice(1).toLowerCase();
+      const processedGreeting = greeting[0].toUpperCase() + greeting.slice(1).toLowerCase();
       session.send(`${processedGreeting}, ${firstName}.`);
     },
     norris: (session) => {
@@ -128,7 +128,7 @@ function createRouter(handlers, routes, middlewares) {
 }
 
 const router = createRouter(availableCommands, [
-  [/^(hi|hello|wassup|hiya|good evening|good morning|good day|privet|yo).*$/i, 'hi', 'A friendly greeting'],
+  [/^(hi|hello|wassup|what\'s up|hiya|good evening|good morning|good day|privet|yo).*$/i, 'hi', 'A friendly greeting'],
   [/^xkcd ?(\d*)$/i, 'xkcd', 'Show random xkcd post'],
   [/^norris$/i, 'norris', 'Show random Chuck Norris fact'],
 ], [prepareMessage]);
